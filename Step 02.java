@@ -24,7 +24,7 @@ When reorganizo os itens em ordem correta crescente
 Then valido a nova ordem
 
 
-#Teste com Cucumber:
+#Teste com Cucumber + Selenium:
 
 import io.cucumber.java.*;
 import io.cucumber.java.en.*;
@@ -55,6 +55,12 @@ public class TesteCompletoSteps {
         }
     }
 
+    // ===== Método utilitário para log =====
+    private void logEtapa(String etapa) {
+        System.out.println("✅ Etapa concluída: " + etapa);
+        System.out.println("➡️ Prosseguindo automaticamente...\n");
+    }
+
     // ===== FORMS =====
     @Given("que acesso a página de Forms")
     public void acessoForms() {
@@ -63,16 +69,46 @@ public class TesteCompletoSteps {
 
     @When("preencho e envio o formulário")
     public void preenchoFormulario() {
-        WebElement firstName = wait.until(ExpectedConditions.elementToBeClickable(By.id("firstName")));
-        firstName.sendKeys("João");
+        driver.findElement(By.id("firstName")).sendKeys("User");
+        driver.findElement(By.id("lastName")).sendKeys("02");
+        driver.findElement(By.id("userEmail")).sendKeys("user02@accenture.com.br");
+        driver.findElement(By.cssSelector("label[for='gender-radio-1']")).click(); // Male
+        driver.findElement(By.id("userNumber")).sendKeys("8198234689");
 
-        driver.findElement(By.id("lastName")).sendKeys("Silva");
-        driver.findElement(By.id("userEmail")).sendKeys("joao.silva@accenture.com");
-        driver.findElement(By.cssSelector("label[for='gender-radio-1']")).click();
-        driver.findElement(By.id("userNumber")).sendKeys("11999999999");
+        // Date of Birth
+        driver.findElement(By.id("dateOfBirthInput")).click();
+        new Select(driver.findElement(By.className("react-datepicker__month-select"))).selectByVisibleText("February");
+        new Select(driver.findElement(By.className("react-datepicker__year-select"))).selectByVisibleText("1997");
+        driver.findElement(By.cssSelector(".react-datepicker__day--022")).click();
 
+        // Subjects
+        WebElement subjects = driver.findElement(By.id("subjectsInput"));
+        subjects.sendKeys("Social Studies");
+        subjects.sendKeys(Keys.ENTER);
+        subjects.sendKeys("Computer Science");
+        subjects.sendKeys(Keys.ENTER);
+        subjects.sendKeys("Accounting");
+        subjects.sendKeys(Keys.ENTER);
+
+        // Hobbies
+        driver.findElement(By.cssSelector("label[for='hobbies-checkbox-2']")).click(); // Reading
+        driver.findElement(By.cssSelector("label[for='hobbies-checkbox-3']")).click(); // Music
+
+        // Upload
+        driver.findElement(By.id("uploadPicture")).sendKeys("C:\\Users\\Public\\Pictures\\teste.png");
+
+        // Address
+        driver.findElement(By.id("currentAddress")).sendKeys("Lion's Street, 67");
+
+        // State & City
+        driver.findElement(By.id("state")).click();
+        driver.findElement(By.xpath("//div[contains(text(),'Haryana')]")).click();
+        driver.findElement(By.id("city")).click();
+        driver.findElement(By.xpath("//div[contains(text(),'Panipat')]")).click();
+
+        // Submit
         WebElement submitBtn = driver.findElement(By.id("submit"));
-        wait.until(ExpectedConditions.elementToBeClickable(submitBtn)).click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitBtn);
     }
 
     @Then("valido que o formulário foi submetido")
@@ -80,6 +116,8 @@ public class TesteCompletoSteps {
         WebElement titulo = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("example-modal-sizes-title-lg")));
         Assert.assertTrue(titulo.getText().contains("Thanks"));
         driver.findElement(By.id("closeLargeModal")).click();
+
+        logEtapa("Formulário");
     }
 
     // ===== BROWSER WINDOWS =====
@@ -106,6 +144,8 @@ public class TesteCompletoSteps {
         Assert.assertTrue(texto.getText().contains("This is a sample page"));
         driver.close();
         driver.switchTo().window(original);
+
+        logEtapa("Browser Windows");
     }
 
     // ===== WEB TABLES =====
@@ -141,6 +181,8 @@ public class TesteCompletoSteps {
             driver.findElement(By.id("department")).sendKeys(reg[5]);
             driver.findElement(By.id("submit")).click();
         }
+
+        logEtapa("Web Tables - Criação");
     }
 
     @When("edito os registros criados")
@@ -153,6 +195,7 @@ public class TesteCompletoSteps {
             depto.sendKeys("Depto Atualizado");
             driver.findElement(By.id("submit")).click();
         }
+        logEtapa("Web Tables - Edição");
     }
 
     @Then("valido os registros editados")
@@ -161,6 +204,7 @@ public class TesteCompletoSteps {
         for (WebElement col : colunas) {
             Assert.assertTrue(col.getText().contains("Depto Atualizado"));
         }
+        logEtapa("Web Tables - Validação");
     }
 
     @Then("deleto todos os registros")
@@ -170,6 +214,7 @@ public class TesteCompletoSteps {
             if (botoesDelete.isEmpty()) break;
             botoesDelete.get(0).click();
         }
+        logEtapa("Web Tables - Exclusão");
     }
 
     // ===== PROGRESS BAR =====
@@ -184,6 +229,7 @@ public class TesteCompletoSteps {
         startStopBtn.click();
         wait.until(ExpectedConditions.textToBePresentInElementLocated(By.cssSelector(".progress-bar"), "25%"));
         startStopBtn.click(); // pausa
+        logEtapa("Progress Bar - 25%");
     }
 
     @When("completo o progresso até 100 por cento")
@@ -191,11 +237,13 @@ public class TesteCompletoSteps {
         WebElement startStopBtn = driver.findElement(By.id("startStopButton"));
         startStopBtn.click();
         wait.until(ExpectedConditions.textToBePresentInElementLocated(By.cssSelector(".progress-bar"), "100%"));
+        logEtapa("Progress Bar - 100%");
     }
 
     @Then("reseto o progresso")
     public void resetoProgresso() {
         driver.findElement(By.id("resetButton")).click();
+        logEtapa("Progress Bar - Reset");
     }
 
     // ===== SORTABLE =====
@@ -208,11 +256,15 @@ public class TesteCompletoSteps {
     public void reorganizoItens() {
         List<WebElement> itens = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("#demo-tabpane-list div")));
         Assert.assertFalse(itens.isEmpty());
+        logEtapa("Sortable - Reorganização");
     }
 
     @Then("valido a nova ordem")
     public void validoOrdem() {
         List<WebElement> itens = driver.findElements(By.cssSelector("#demo-tabpane-list div"));
         Assert.assertTrue(itens.size() > 0);
+        logEtapa("Sortable - Validação");
     }
 }
+
+
